@@ -7,6 +7,31 @@
 #include <Adafruit_NeoPixel.h>  //네오픽셀
 #include "Button2.h"            //button
 
+
+
+
+#include <ESP32Time.h> //rtc
+#include <WiFi.h>      //wifi
+
+                      //sd 관한것들
+#include <FS.h>
+#include <SD.h>
+#include <SPI.h>
+
+#include <BluetoothSerial.h> //블루투스
+
+
+
+
+
+ESP32Time rtc; // rtc 객체선언
+BluetoothSerial SerialBT; //블루투스 객체선언
+
+
+
+
+
+
 //////////////////////////////////////////////////
 ////////핀 번호 선택
 //로터리
@@ -82,10 +107,143 @@ int loop_number = 0; //LOOP 기능 공부 횟수 지정
 int color_position = 0;//색상 선택 기능을 위한 색상값 저장 변수
 int temp_rotari_val = 0;//색상 선택 관련 로터리 값 임시 저장 변수
 
+
+
+const char* ssid       = "abc";   //wifi 아이디
+const char* password   = "";      //wifi 비번
+
+const char* ntpServer = "kr.pool.ntp.org";    //rtc 서버
+const long  gmtOffset_sec = 3600*8;           //gmt+9
+const int   daylightOffset_sec = 3600;
+
+
+
+
+//sd카드
+void readFile(fs::FS &fs, const char * path){
+    Serial.printf("Reading file: %s\n", path);
+
+    File file = fs.open(path);
+    if(!file)
+    {
+        Serial.println("Failed to open file for reading");
+        return;
+    }
+
+    Serial.print("Read from file: ");
+    while(file.available())
+    {
+        //Serial.write(file.read());
+        SerialBT.write(file.read());   
+    }
+    file.close();
+}
+
+void writeFile(fs::FS &fs, const char * path, const char * message){
+    Serial.printf("Writing file: %s\n", path);
+
+    File file = fs.open(path, FILE_WRITE);
+    if(!file)
+    {
+        Serial.print("Failed to open file for writing");
+        return;
+    }
+    if(file.println(message))
+    {
+        Serial.println("File written");
+    } 
+    else 
+    {
+        Serial.println("Write failed");
+    }
+    file.close();
+}
+
+void appendFile(fs::FS &fs, const char * path, const char * message){
+    Serial.printf("Appending to file: %s\n", path);
+
+    File file = fs.open(path, FILE_APPEND);
+    if(!file){
+        Serial.println("Failed to open file for appending");
+        return;
+    }
+    if(file.print(message))
+    {
+        Serial.println("Message appended");
+    } 
+    else 
+    {
+        Serial.println("Append failed");
+    }
+    file.close();
+}
+
+void blesend(char k) // 앱에서 블루투스를 통해 받고 보냄
+{
+   if(k == 'T')        // 앱에서 T를 받으면
+    readFile(SD, "/hello.txt"); //앱에다 보냄
+}
+
+
+
+
+
+
+
+
+
+
+
 //========================== DEFAULT SETUP ==================================
+
+
+
+
+
+
 void setup()
 {
   Serial.begin(115200);
+
+
+if(!SD.begin()) // SD카드 읽은거 실패하면 이렇게 뜸
+  {
+        Serial.println("Card Mount Failed");
+  }
+
+//블루투스
+SerialBT.begin("ESP32test");
+Serial.println("블루투스 시작");
+
+
+//wifi
+  Serial.printf("Connecting to %s ", ssid);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) //와이파이 연결될때까지 반복
+  {
+      delay(500);
+      Serial.print(".");
+  }
+  Serial.println(" CONNECTED");
+
+
+
+
+  //RTC 세팅하기위한 NTP 서버 접속
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo))
+  {
+    rtc.setTimeStruct(timeinfo); //여기서 얻어옴
+  }
+
+
+  //WIFI 끔
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+
+
+  writeFile(SD, "/hello.txt", "SD카드 초기세팅완료"); //처음 파일 만들어줌
   
 ///////////////////////////////////////////////
 
@@ -133,6 +291,12 @@ void loop()
       while(1)
       {
         Serial.println("기본 타이머 시작");
+        
+
+        blesend(SerialBT.read()); //블루투스 시리얼 읽고 SD카드 목록 보내자
+        
+        
+        
         timeLimit_global = rotateTime_rotari();
         button.loop(); //버튼 입력 체크를 위함
         
@@ -192,8 +356,15 @@ void loop()
          * 
          * 본 설명은  LOOP기능 설정 과정에 적용됨.
          */
+
+
+        blesend(SerialBT.read()); //블루투스 시리얼 읽고 SD카드 목록 보내자 
+
+
         if(btn_flag >= 2)
-          break; 
+          break;
+        
+         
       }
       ////////////////////////////////////////////
       while(1)//휴식시간 설정
@@ -203,6 +374,10 @@ void loop()
         break_time = rotateTime_rotari();
         Serial.println((String)"휴식시간 :" + break_time);
         button.loop(); //버튼 입력 체크를 위함
+        
+        
+        blesend(SerialBT.read()); //블루투스 시리얼 읽고 SD카드 목록 보내자
+        
         if(btn_flag >= 3)
           break; 
       }
@@ -216,6 +391,11 @@ void loop()
         Serial.println((String)"반복횟수 :" + loop_number);
         button.loop(); //버튼 입력 체크를 위함
         
+
+
+        blesend(SerialBT.read()); //블루투스 시리얼 읽고 SD카드 목록 보내자  
+
+
         if(btn_flag >= 4)
           break; 
       }
@@ -291,8 +471,13 @@ void loop()
 
         button.loop(); //버튼 입력 체크를 위함
 
+        blesend(SerialBT.read()); //블루투스 시리얼 읽고 SD카드 목록 보내자
+        
+        
         if(btn_flag >= 3)
           break;
+
+
         
       }
 
@@ -463,6 +648,8 @@ void neo_1(long neo1_time)
   
       
    display.setSegments(DONE); //끝났다고 뜨기
+   appendFile(SD, "/hello.txt", "공부한 시간 : " + (char)neo1_time ); //공부한 시간 SD 카드에 추가
+
    //SSound();  ESP32 버전으로 수정 필수
    delay(2000);
    
@@ -505,6 +692,6 @@ void handler(Button2& btn) {
  *      일부 주석 수정 및 추가, 테스트 완료
  * V1.2 neo_1 내부 SSound();  ESP32 버전으로 수정 필수, 타이머 기능 및 동작 함수 추가, 타이머 기능 완성
  * 테스트 미완료 <08.31 시점>
- * V1.3
+ * V1.3 블루투스 추가, 시험은 안해봄
  * V1.4
  */
