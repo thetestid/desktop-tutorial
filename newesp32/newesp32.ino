@@ -20,7 +20,7 @@ const char* ntpServer = "kr.pool.ntp.org";
 const long  gmtOffset_sec = 3600*8;
 const int   daylightOffset_sec = 3600;
 
-char kkk;
+
 
 
 //sd카드
@@ -91,19 +91,20 @@ void blesend(char k)
 
 void setup() 
 {
-  Serial.begin(115200);
+Serial.begin(115200);
 
   
-  
-  if(!SD.begin())
-  {
-        Serial.println("Card Mount Failed");
-        return;
-  }
+SerialBT.begin("ESP32test");
 
-  
-  SerialBT.begin("ESP32test");
-  Serial.println("The device started, now you can pair it with bluetooth!");
+
+while(!SerialBT.begin())
+        Serial.println("블루투스 확인해주세요");   
+
+Serial.println("esp32 bluetooth start!")
+
+while(!SD.begin())
+    Serial.println("sd 카드 확인해주세요");   
+
 
   
   //wifi
