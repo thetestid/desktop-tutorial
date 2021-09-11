@@ -21,6 +21,8 @@ const long  gmtOffset_sec = 3600*8;
 const int   daylightOffset_sec = 3600;
 
 
+
+
 //sd카드
 void readFile(fs::FS &fs, const char * path){
     Serial.printf("Reading file: %s\n", path);
@@ -80,19 +82,30 @@ void appendFile(fs::FS &fs, const char * path, const char * message){
     file.close();
 }
 
+
+void blesend(char k)
+{
+   if(k == 'T')        // T를 보내면
+    readFile(SD, "/hello.txt"); //앱에다 보냄
+}
+
 void setup() 
 {
-  Serial.begin(115200);
-
-  if(!SD.begin())
-  {
-        Serial.println("Card Mount Failed");
-        return;
-  }
+Serial.begin(115200);
 
   
-  SerialBT.begin("ESP32test");
-  Serial.println("The device started, now you can pair it with bluetooth!");
+SerialBT.begin("ESP32test");
+
+
+while(!SerialBT.begin())
+        Serial.println("블루투스 확인해주세요");   
+Serial.println("esp32 bluetooth start!")
+
+while(!SD.begin())
+    Serial.println("sd 카드 확인해주세요");
+Serial.println("sd카드가 연결 되었어요!");   
+   
+
 
   
   //wifi
@@ -121,12 +134,10 @@ void setup()
   WiFi.mode(WIFI_OFF);
   
   
-    //writeFile(SD, "/hello.txt", "test1"); //처음 파일 만들어줌
+    writeFile(SD, "/hello.txt", "test1"); //처음 파일 만들어줌
     appendFile(SD, "/hello.txt", "공부한 시간 : timelimit1test - ");
     appendFile(SD, "/hello.txt", asctime(&timeinfo));
     
-    readFile(SD, "/hello.txt"); 
-
 
   //SerialBT.end();  //블루투스 끌수 있음
 
@@ -134,14 +145,27 @@ void setup()
 
 void loop() 
 { 
- //readFile(SD, "/hello.txt");
- /* 
- if (Serial.available()) {
+ 
+ /*
+ if (Serial.available()) 
+ {
     SerialBT.write(Serial.read());
-  }
-  if (SerialBT.available()) {
+ }
+ 
+  if (SerialBT.available()) 
+  {
     Serial.write(SerialBT.read());
   }
   */
+  
+
+    blesend(SerialBT.read());
+    /*
+    kkk = SerialBT.read();
+    if(kkk == 'T')
+      readFile(SD, "/hello.txt");
+    */
     
-}
+  
+  
+}  
