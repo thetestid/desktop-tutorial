@@ -99,11 +99,12 @@ SerialBT.begin("ESP32test");
 
 while(!SerialBT.begin())
         Serial.println("블루투스 확인해주세요");   
-
 Serial.println("esp32 bluetooth start!")
 
 while(!SD.begin())
-    Serial.println("sd 카드 확인해주세요");   
+    Serial.println("sd 카드 확인해주세요");
+Serial.println("sd카드가 연결 되었어요!");   
+   
 
 
   
