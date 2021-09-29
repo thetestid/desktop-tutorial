@@ -23,6 +23,18 @@ const int   daylightOffset_sec = 3600;
 char TTT = 'T';
 
 
+void sdcardblesend(char k)
+{
+   if(k == 'T')        // T를 보내면
+    readFile(SD, "/hello.txt"); //앱에다 보냄
+}
+
+void firebasesend()
+{
+    
+}
+
+
 
 //sd카드
 void readFile(fs::FS &fs, const char * path){
@@ -83,12 +95,6 @@ void appendFile(fs::FS &fs, const char * path, const char * message){
     file.close();
 }
 
-
-void blesend(char k)
-{
-   if(k == 'T')        // T를 보내면
-    readFile(SD, "/hello.txt"); //앱에다 보냄
-}
 
 void setup() 
 {
