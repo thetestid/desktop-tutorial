@@ -20,6 +20,7 @@ const char* ntpServer = "kr.pool.ntp.org";
 const long  gmtOffset_sec = 3600*8;
 const int   daylightOffset_sec = 3600;
 
+char TTT = 'T';
 
 
 
@@ -158,8 +159,10 @@ void loop()
   }
   */
   
-
+if(TTT == SerialBT.read())
     blesend(SerialBT.read());
+    
+    
     /*
     kkk = SerialBT.read();
     if(kkk == 'T')
