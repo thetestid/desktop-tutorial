@@ -29,9 +29,10 @@ void sdcardblesend(char k)
     readFile(SD, "/hello.txt"); //앱에다 보냄
 }
 
-void firebasesend()
+void firebasesend(long neo1_time)
 {
-    
+    SerialBT.write((int)neo1_time);
+   
 }
 
 
